@@ -9,7 +9,7 @@ import (
 var _categories = []entity.Category{
 	{ID: 1, Name: "Category A", Description: util.StringPtr("Description Category A")},
 	{ID: 2, Name: "Category B", Description: util.StringPtr("Description Category B")},
-	{ID: 3, Name: "Category C", Description: nil},
+	{ID: 3, Name: "Category C", Description: util.StringPtr("Description Category C")},
 }
 
 type CategoryRepository struct {
