@@ -9,10 +9,12 @@ import (
 func main() {
 	cfg := config.NewViper()
 	server := http.NewServeMux()
+	validator := config.NewValidator()
 
 	config.Bootstrap(&config.BootstrapConfig{
-		Server: server,
-		Config: cfg,
+		Server:   server,
+		Config:   cfg,
+		Validate: validator,
 	})
 
 	fmt.Println("Starting server on port", cfg.AppPort)

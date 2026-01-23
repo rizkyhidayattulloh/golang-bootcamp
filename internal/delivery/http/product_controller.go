@@ -1,15 +1,98 @@
 package http
 
-import "net/http"
+import (
+	"kasir-api/internal/models"
+	"kasir-api/internal/usecase"
+	"net/http"
+)
 
 type ProductController struct {
+	ProductUseCase *usecase.ProductUseCase
 }
 
-func NewProductController(server *http.ServeMux) *ProductController {
-	return &ProductController{}
+func NewProductController(productUseCase *usecase.ProductUseCase) *ProductController {
+	return &ProductController{
+		ProductUseCase: productUseCase,
+	}
 }
 
-func (pc *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("List of products"))
+func (pc *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) error {
+	products, err := pc.ProductUseCase.List()
+	if err != nil {
+		return err
+	}
+
+	EncodeJSON(w, http.StatusOK, models.WebResponse[[]models.ProductResponse]{
+		Data: products,
+	})
+
+	return nil
+}
+
+func (pc *ProductController) GetProduct(w http.ResponseWriter, r *http.Request, id int) error {
+	product, err := pc.ProductUseCase.Get(id)
+	if err != nil {
+		return err
+	}
+
+	EncodeJSON(w, http.StatusOK, models.WebResponse[*models.ProductResponse]{
+		Data: product,
+	})
+
+	return nil
+}
+
+func (pc *ProductController) CreateProduct(w http.ResponseWriter, r *http.Request) error {
+	var req *models.CreateProductRequest
+	err := DecodeJSON(r, &req)
+	if err != nil {
+		return err
+	}
+
+	product, err := pc.ProductUseCase.Create(req)
+	if err != nil {
+		return err
+	}
+
+	EncodeJSON(w, http.StatusCreated, models.WebResponse[*models.ProductResponse]{
+		Data: product,
+	})
+
+	return nil
+}
+
+func (pc *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Request, id int) error {
+	var req *models.UpdateProductRequest
+	err := DecodeJSON(r, &req)
+	if err != nil {
+		return err
+	}
+
+	req.ID = id
+
+	product, err := pc.ProductUseCase.Update(req)
+	if err != nil {
+		return err
+	}
+
+	EncodeJSON(w, http.StatusOK, models.WebResponse[*models.ProductResponse]{
+		Data: product,
+	})
+
+	return nil
+}
+
+func (pc *ProductController) DeleteProduct(w http.ResponseWriter, r *http.Request, id int) error {
+	err := pc.ProductUseCase.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	EncodeJSON(w, http.StatusOK, models.WebResponse[map[string]string]{
+		Data: map[string]string{
+			"message": "Product deleted successfully",
+		},
+	})
+
+	return nil
 }
