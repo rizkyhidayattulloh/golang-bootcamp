@@ -18,14 +18,18 @@ type BootstrapConfig struct {
 
 func Bootstrap(config *BootstrapConfig) {
 	productRepository := repository.NewProductRepository()
+	categoryRepository := repository.NewCategoryRepository()
 
 	productUseCase := usecase.NewProductUseCase(productRepository, config.Validate)
+	categoryUseCase := usecase.NewCategoryUseCase(categoryRepository, config.Validate)
 
 	productController := httpController.NewProductController(productUseCase)
+	categoryController := httpController.NewCategoryController(categoryUseCase)
 
 	routeConfig := route.RouteConfig{
-		Server:            config.Server,
-		ProductController: productController,
+		Server:             config.Server,
+		ProductController:  productController,
+		CategoryController: categoryController,
 	}
 
 	routeConfig.Setup()

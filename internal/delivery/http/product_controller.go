@@ -3,6 +3,7 @@ package http
 import (
 	"kasir-api/internal/models"
 	"kasir-api/internal/usecase"
+	"kasir-api/internal/util"
 	"net/http"
 )
 
@@ -22,7 +23,7 @@ func (pc *ProductController) GetProducts(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	EncodeJSON(w, http.StatusOK, models.WebResponse[[]models.ProductResponse]{
+	util.EncodeJSON(w, http.StatusOK, models.WebResponse[[]models.ProductResponse]{
 		Data: products,
 	})
 
@@ -35,7 +36,7 @@ func (pc *ProductController) GetProduct(w http.ResponseWriter, r *http.Request, 
 		return err
 	}
 
-	EncodeJSON(w, http.StatusOK, models.WebResponse[*models.ProductResponse]{
+	util.EncodeJSON(w, http.StatusOK, models.WebResponse[*models.ProductResponse]{
 		Data: product,
 	})
 
@@ -44,7 +45,7 @@ func (pc *ProductController) GetProduct(w http.ResponseWriter, r *http.Request, 
 
 func (pc *ProductController) CreateProduct(w http.ResponseWriter, r *http.Request) error {
 	var req *models.CreateProductRequest
-	err := DecodeJSON(r, &req)
+	err := util.DecodeJSON(r, &req)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (pc *ProductController) CreateProduct(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	EncodeJSON(w, http.StatusCreated, models.WebResponse[*models.ProductResponse]{
+	util.EncodeJSON(w, http.StatusCreated, models.WebResponse[*models.ProductResponse]{
 		Data: product,
 	})
 
@@ -63,7 +64,7 @@ func (pc *ProductController) CreateProduct(w http.ResponseWriter, r *http.Reques
 
 func (pc *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Request, id int) error {
 	var req *models.UpdateProductRequest
-	err := DecodeJSON(r, &req)
+	err := util.DecodeJSON(r, &req)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func (pc *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	EncodeJSON(w, http.StatusOK, models.WebResponse[*models.ProductResponse]{
+	util.EncodeJSON(w, http.StatusOK, models.WebResponse[*models.ProductResponse]{
 		Data: product,
 	})
 
@@ -88,7 +89,7 @@ func (pc *ProductController) DeleteProduct(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	EncodeJSON(w, http.StatusOK, models.WebResponse[map[string]string]{
+	util.EncodeJSON(w, http.StatusOK, models.WebResponse[map[string]string]{
 		Data: map[string]string{
 			"message": "Product deleted successfully",
 		},
