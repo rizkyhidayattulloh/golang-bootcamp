@@ -25,11 +25,13 @@ func Bootstrap(config *BootstrapConfig) {
 
 	productController := httpController.NewProductController(productUseCase)
 	categoryController := httpController.NewCategoryController(categoryUseCase)
+	docsController := httpController.NewDocsController()
 
 	routeConfig := route.RouteConfig{
 		Server:             config.Server,
 		ProductController:  productController,
 		CategoryController: categoryController,
+		DocsController:     docsController,
 	}
 
 	routeConfig.Setup()

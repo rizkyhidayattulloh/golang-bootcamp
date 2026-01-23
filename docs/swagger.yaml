@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: Kasir API
+  description: API documentation for products and categories.
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: List products
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseProductResponseArray"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Products
+      summary: Create product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseProductResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseProductResponse"
+        "400":
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      tags:
+        - Products
+      summary: Update product
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseProductResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseMessage"
+        "400":
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/categories:
+    get:
+      tags:
+        - Categories
+      summary: List categories
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseCategoryResponseArray"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Categories
+      summary: Create category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseCategoryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/categories/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Get category by ID
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseCategoryResponse"
+        "400":
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      tags:
+        - Categories
+      summary: Update category
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseCategoryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags:
+        - Categories
+      summary: Delete category
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseMessage"
+        "400":
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  parameters:
+    IdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+    ProductResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        price:
+          type: integer
+          format: int64
+        stock:
+          type: integer
+          format: int64
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+    CreateProductRequest:
+      type: object
+      required:
+        - name
+        - price
+        - stock
+      properties:
+        name:
+          type: string
+        price:
+          type: integer
+          format: int64
+          minimum: 0
+        stock:
+          type: integer
+          format: int64
+          minimum: 0
+    UpdateProductRequest:
+      type: object
+      required:
+        - name
+        - price
+        - stock
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Optional. Server uses the path ID.
+        name:
+          type: string
+        price:
+          type: integer
+          format: int64
+          minimum: 0
+        stock:
+          type: integer
+          format: int64
+          minimum: 0
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+    UpdateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Optional. Server uses the path ID.
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    WebResponseProductResponseArray:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+        errors:
+          type: string
+    WebResponseProductResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ProductResponse"
+        errors:
+          type: string
+    WebResponseCategoryResponseArray:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryResponse"
+        errors:
+          type: string
+    WebResponseCategoryResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CategoryResponse"
+        errors:
+          type: string
+    WebResponseMessage:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/MessageResponse"
+        errors:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int64
+        message:
+          type: string

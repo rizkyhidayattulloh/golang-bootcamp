@@ -14,9 +14,13 @@ type RouteConfig struct {
 	Server             *http.ServeMux
 	ProductController  *httpController.ProductController
 	CategoryController *httpController.CategoryController
+	DocsController     *httpController.DocsController
 }
 
 func (c *RouteConfig) Setup() {
+	c.Server.HandleFunc("/", c.DocsController.SwaggerUIHandler)
+	c.Server.HandleFunc("/swagger/doc.json", c.DocsController.SwaggerJSONHandler)
+
 	c.Server.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		util.EncodeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
