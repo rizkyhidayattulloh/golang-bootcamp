@@ -1,0 +1,5 @@
+{
+  "go": {
+    "entry": "cmd/web/main.go"
+  }
+}
