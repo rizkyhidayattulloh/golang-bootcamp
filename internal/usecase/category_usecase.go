@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"context"
-	"database/sql"
 	"kasir-api/internal/entity"
 	"kasir-api/internal/models"
 	"kasir-api/internal/models/converter"
 	"kasir-api/internal/repository"
+	"kasir-api/internal/util"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -68,10 +68,7 @@ func (p *CategoryUseCase) Create(ctx context.Context, request *models.CreateCate
 
 	if request.Description != nil {
 		desc := *request.Description
-		Category.Description = sql.NullString{
-			String: desc,
-			Valid:  desc != "",
-		}
+		Category.Description = util.NullStringFrom(desc)
 	}
 
 	createdCategory, err := p.CategoryRepository.Create(ctx, Category)
@@ -111,10 +108,7 @@ func (p *CategoryUseCase) Update(ctx context.Context, request *models.UpdateCate
 
 	if request.Description != nil {
 		desc := *request.Description
-		Category.Description = sql.NullString{
-			String: desc,
-			Valid:  desc != "",
-		}
+		Category.Description = util.NullStringFrom(desc)
 	}
 
 	updatedCategory, err := p.CategoryRepository.Update(ctx, Category)
