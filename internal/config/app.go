@@ -1,6 +1,7 @@
 package config
 
 import (
+	"database/sql"
 	httpController "kasir-api/internal/delivery/http"
 	"kasir-api/internal/delivery/http/route"
 	"kasir-api/internal/repository"
@@ -8,17 +9,19 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 )
 
 type BootstrapConfig struct {
 	Server   *http.ServeMux
-	Config   *Config
+	Config   *viper.Viper
 	Validate *validator.Validate
+	DB       *sql.DB
 }
 
 func Bootstrap(config *BootstrapConfig) {
 	productRepository := repository.NewProductRepository()
-	categoryRepository := repository.NewCategoryRepository()
+	categoryRepository := repository.NewCategoryRepository(config.DB)
 
 	productUseCase := usecase.NewProductUseCase(productRepository, config.Validate)
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepository, config.Validate)

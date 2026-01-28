@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"context"
+	"database/sql"
 	"kasir-api/internal/entity"
 	"kasir-api/internal/models"
 	"kasir-api/internal/models/converter"
@@ -22,8 +24,8 @@ func NewCategoryUseCase(CategoryRepository *repository.CategoryRepository, valid
 	}
 }
 
-func (p *CategoryUseCase) List() ([]models.CategoryResponse, error) {
-	categories, err := p.CategoryRepository.GetAll()
+func (p *CategoryUseCase) List(ctx context.Context) ([]models.CategoryResponse, error) {
+	categories, err := p.CategoryRepository.GetAll(ctx)
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.StatusInternalServerError,
@@ -39,8 +41,8 @@ func (p *CategoryUseCase) List() ([]models.CategoryResponse, error) {
 	return response, nil
 }
 
-func (p *CategoryUseCase) Get(id int) (*models.CategoryResponse, error) {
-	Category, err := p.CategoryRepository.FindByID(id)
+func (p *CategoryUseCase) Get(ctx context.Context, id int) (*models.CategoryResponse, error) {
+	Category, err := p.CategoryRepository.FindByID(ctx, id)
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.StatusNotFound,
@@ -51,7 +53,7 @@ func (p *CategoryUseCase) Get(id int) (*models.CategoryResponse, error) {
 	return converter.CategoryToResponse(Category), nil
 }
 
-func (p *CategoryUseCase) Create(request *models.CreateCategoryRequest) (*models.CategoryResponse, error) {
+func (p *CategoryUseCase) Create(ctx context.Context, request *models.CreateCategoryRequest) (*models.CategoryResponse, error) {
 	err := p.Validate.Struct(request)
 	if err != nil {
 		return nil, &models.Error{
@@ -61,11 +63,18 @@ func (p *CategoryUseCase) Create(request *models.CreateCategoryRequest) (*models
 	}
 
 	Category := &entity.Category{
-		Name:        request.Name,
-		Description: request.Description,
+		Name: request.Name,
 	}
 
-	createdCategory, err := p.CategoryRepository.Create(Category)
+	if request.Description != nil {
+		desc := *request.Description
+		Category.Description = sql.NullString{
+			String: desc,
+			Valid:  desc != "",
+		}
+	}
+
+	createdCategory, err := p.CategoryRepository.Create(ctx, Category)
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.StatusInternalServerError,
@@ -77,7 +86,7 @@ func (p *CategoryUseCase) Create(request *models.CreateCategoryRequest) (*models
 	return response, nil
 }
 
-func (p *CategoryUseCase) Update(request *models.UpdateCategoryRequest) (*models.CategoryResponse, error) {
+func (p *CategoryUseCase) Update(ctx context.Context, request *models.UpdateCategoryRequest) (*models.CategoryResponse, error) {
 
 	err := p.Validate.Struct(request)
 	if err != nil {
@@ -87,7 +96,7 @@ func (p *CategoryUseCase) Update(request *models.UpdateCategoryRequest) (*models
 		}
 	}
 
-	_, err = p.CategoryRepository.FindByID(request.ID)
+	_, err = p.CategoryRepository.FindByID(ctx, request.ID)
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.StatusNotFound,
@@ -96,12 +105,19 @@ func (p *CategoryUseCase) Update(request *models.UpdateCategoryRequest) (*models
 	}
 
 	Category := &entity.Category{
-		ID:          request.ID,
-		Name:        request.Name,
-		Description: request.Description,
+		ID:   request.ID,
+		Name: request.Name,
 	}
 
-	updatedCategory, err := p.CategoryRepository.Update(Category)
+	if request.Description != nil {
+		desc := *request.Description
+		Category.Description = sql.NullString{
+			String: desc,
+			Valid:  desc != "",
+		}
+	}
+
+	updatedCategory, err := p.CategoryRepository.Update(ctx, Category)
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.StatusInternalServerError,
@@ -113,8 +129,8 @@ func (p *CategoryUseCase) Update(request *models.UpdateCategoryRequest) (*models
 	return response, nil
 }
 
-func (p *CategoryUseCase) Delete(id int) error {
-	_, err := p.CategoryRepository.FindByID(id)
+func (p *CategoryUseCase) Delete(ctx context.Context, id int) error {
+	_, err := p.CategoryRepository.FindByID(ctx, id)
 	if err != nil {
 		return &models.Error{
 			Status:  http.StatusNotFound,
@@ -122,7 +138,7 @@ func (p *CategoryUseCase) Delete(id int) error {
 		}
 	}
 
-	err = p.CategoryRepository.Delete(id)
+	err = p.CategoryRepository.Delete(ctx, id)
 	if err != nil {
 		return &models.Error{
 			Status:  http.StatusInternalServerError,

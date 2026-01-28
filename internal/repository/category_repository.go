@@ -1,63 +1,157 @@
 package repository
 
 import (
+	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"kasir-api/internal/entity"
-	"kasir-api/internal/util"
 )
 
-var _categories = []entity.Category{
-	{ID: 1, Name: "Category A", Description: util.StringPtr("Description Category A")},
-	{ID: 2, Name: "Category B", Description: util.StringPtr("Description Category B")},
-	{ID: 3, Name: "Category C", Description: util.StringPtr("Description Category C")},
-}
-
 type CategoryRepository struct {
+	DB *sql.DB
 }
 
-func NewCategoryRepository() *CategoryRepository {
-	return &CategoryRepository{}
+func NewCategoryRepository(db *sql.DB) *CategoryRepository {
+	return &CategoryRepository{
+		DB: db,
+	}
 }
 
-func (pr *CategoryRepository) GetAll() ([]entity.Category, error) {
-	return _categories, nil
-}
+func (pr *CategoryRepository) GetAll(ctx context.Context) ([]entity.Category, error) {
+	const query = `
+		SELECT *
+		FROM categories
+		ORDER BY id
+	`
 
-func (pr *CategoryRepository) FindByID(id int) (*entity.Category, error) {
-	for _, p := range _categories {
-		if p.ID == id {
-			return &p, nil
+	rows, err := pr.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		if err := rows.Close(); err != nil {
+			fmt.Println("failed to close rows:", err)
 		}
+	}(rows)
+
+	categories := make([]entity.Category, 0)
+
+	for rows.Next() {
+		var category entity.Category
+
+		if err := rows.Scan(
+			&category.ID,
+			&category.Name,
+			&category.Description,
+		); err != nil {
+			return nil, err
+		}
+
+		categories = append(categories, category)
 	}
 
-	return nil, errors.New("category not found")
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return categories, nil
 }
 
-func (pr *CategoryRepository) Create(Category *entity.Category) (*entity.Category, error) {
-	Category.ID = len(_categories) + 1
-	_categories = append(_categories, *Category)
+func (pr *CategoryRepository) FindByID(ctx context.Context, id int) (*entity.Category, error) {
+	const query = `
+		SELECT *
+		FROM categories
+		WHERE id = $1
+	`
+
+	row := pr.DB.QueryRowContext(ctx, query, id)
+
+	var category entity.Category
+
+	if err := row.Scan(
+		&category.ID,
+		&category.Name,
+		&category.Description,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("category not found")
+		}
+		return nil, err
+	}
+
+	return &category, nil
+}
+
+func (pr *CategoryRepository) Create(ctx context.Context, Category *entity.Category) (*entity.Category, error) {
+	const query = `
+		INSERT INTO categories (name, description)
+		VALUES ($1, $2)
+		RETURNING id
+	`
+
+	err := pr.DB.QueryRowContext(
+		ctx,
+		query,
+		Category.Name,
+		Category.Description,
+	).Scan(&Category.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	return Category, nil
 }
 
-func (pr *CategoryRepository) Update(Category *entity.Category) (*entity.Category, error) {
-	for i, p := range _categories {
-		if p.ID == Category.ID {
-			_categories[i] = *Category
-			return Category, nil
-		}
+func (pr *CategoryRepository) Update(ctx context.Context, Category *entity.Category) (*entity.Category, error) {
+	const query = `
+		UPDATE categories
+		SET name = $1, description = $2
+		WHERE id = $3
+	`
+
+	result, err := pr.DB.ExecContext(
+		ctx,
+		query,
+		Category.Name,
+		Category.Description,
+		Category.ID,
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New("category not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+
+	if rowsAffected == 0 {
+		return nil, errors.New("category not found")
+	}
+
+	return Category, nil
 }
 
-func (pr *CategoryRepository) Delete(id int) error {
-	for i, p := range _categories {
-		if p.ID == id {
-			_categories = append(_categories[:i], _categories[i+1:]...)
-			return nil
-		}
+func (pr *CategoryRepository) Delete(ctx context.Context, id int) error {
+	const query = `
+		DELETE FROM categories
+		WHERE id = $1
+	`
+
+	result, err := pr.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
 	}
 
-	return errors.New("category not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("category not found")
+	}
+
+	return nil
 }

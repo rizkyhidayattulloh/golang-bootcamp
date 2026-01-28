@@ -18,7 +18,7 @@ func NewCategoryController(CategoryUseCase *usecase.CategoryUseCase) *CategoryCo
 }
 
 func (pc *CategoryController) GetCategories(w http.ResponseWriter, r *http.Request) error {
-	categories, err := pc.CategoryUseCase.List()
+	categories, err := pc.CategoryUseCase.List(r.Context())
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (pc *CategoryController) GetCategories(w http.ResponseWriter, r *http.Reque
 }
 
 func (pc *CategoryController) GetCategory(w http.ResponseWriter, r *http.Request, id int) error {
-	Category, err := pc.CategoryUseCase.Get(id)
+	Category, err := pc.CategoryUseCase.Get(r.Context(), id)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (pc *CategoryController) CreateCategory(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 
-	Category, err := pc.CategoryUseCase.Create(req)
+	Category, err := pc.CategoryUseCase.Create(r.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (pc *CategoryController) UpdateCategory(w http.ResponseWriter, r *http.Requ
 
 	req.ID = id
 
-	Category, err := pc.CategoryUseCase.Update(req)
+	Category, err := pc.CategoryUseCase.Update(r.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (pc *CategoryController) UpdateCategory(w http.ResponseWriter, r *http.Requ
 }
 
 func (pc *CategoryController) DeleteCategory(w http.ResponseWriter, r *http.Request, id int) error {
-	err := pc.CategoryUseCase.Delete(id)
+	err := pc.CategoryUseCase.Delete(r.Context(), id)
 	if err != nil {
 		return err
 	}
