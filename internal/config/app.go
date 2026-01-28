@@ -20,10 +20,10 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
-	productRepository := repository.NewProductRepository()
+	productRepository := repository.NewProductRepository(config.DB)
 	categoryRepository := repository.NewCategoryRepository(config.DB)
 
-	productUseCase := usecase.NewProductUseCase(productRepository, config.Validate)
+	productUseCase := usecase.NewProductUseCase(productRepository, categoryRepository, config.Validate)
 	categoryUseCase := usecase.NewCategoryUseCase(categoryRepository, config.Validate)
 
 	productController := httpController.NewProductController(productUseCase)

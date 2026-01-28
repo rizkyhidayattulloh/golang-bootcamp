@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"kasir-api/internal/entity"
 )
 
@@ -12,51 +15,172 @@ var _products = []entity.Product{
 }
 
 type ProductRepository struct {
+	DB *sql.DB
 }
 
-func NewProductRepository() *ProductRepository {
-	return &ProductRepository{}
+func NewProductRepository(db *sql.DB) *ProductRepository {
+	return &ProductRepository{
+		DB: db,
+	}
 }
 
-func (pr *ProductRepository) GetAll() ([]entity.Product, error) {
-	return _products, nil
-}
+func (pr *ProductRepository) GetAll(ctx context.Context) ([]entity.Product, error) {
+	const query = `
+		SELECT *
+		FROM products
+		ORDER BY id
+	`
 
-func (pr *ProductRepository) FindByID(id int) (*entity.Product, error) {
-	for _, p := range _products {
-		if p.ID == id {
-			return &p, nil
+	rows, err := pr.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		if err := rows.Close(); err != nil {
+			fmt.Println("failed to close rows:", err)
 		}
+	}(rows)
+
+	products := make([]entity.Product, 0)
+
+	for rows.Next() {
+		var product entity.Product
+
+		if err := rows.Scan(
+			&product.ID,
+			&product.CategoryID,
+			&product.Name,
+			&product.Price,
+			&product.Stock,
+		); err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
 	}
 
-	return nil, errors.New("product not found")
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }
 
-func (pr *ProductRepository) Create(product *entity.Product) (*entity.Product, error) {
-	product.ID = len(_products) + 1
-	_products = append(_products, *product)
+func (pr *ProductRepository) FindByID(ctx context.Context, id int) (*entity.Product, error) {
+	const query = `
+		SELECT
+			p.id,
+			p.name,
+			p.price,
+			p.stock,
+			p.category_id,
+			c.id,
+			c.name,
+			c.description
+		FROM products p
+		JOIN categories c ON c.id = p.category_id
+		WHERE p.id = $1
+	`
+
+	row := pr.DB.QueryRowContext(ctx, query, id)
+
+	var product entity.Product
+	var category entity.Category
+
+	if err := row.Scan(
+		&product.ID,
+		&product.Name,
+		&product.Price,
+		&product.Stock,
+		&product.CategoryID,
+		&category.ID,
+		&category.Name,
+		&category.Description,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("product not found")
+		}
+		return nil, err
+	}
+
+	product.Category = &category
+
+	return &product, nil
+}
+
+func (pr *ProductRepository) Create(ctx context.Context, product *entity.Product) (*entity.Product, error) {
+	const query = `
+		INSERT INTO products (category_id, name, price, stock)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id
+	`
+
+	err := pr.DB.QueryRowContext(
+		ctx,
+		query,
+		product.CategoryID,
+		product.Name,
+		product.Price,
+		product.Stock,
+	).Scan(&product.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	return product, nil
 }
 
-func (pr *ProductRepository) Update(product *entity.Product) (*entity.Product, error) {
-	for i, p := range _products {
-		if p.ID == product.ID {
-			_products[i] = *product
-			return product, nil
-		}
+func (pr *ProductRepository) Update(ctx context.Context, product *entity.Product) (*entity.Product, error) {
+	const query = `
+		UPDATE products
+		SET category_id = $1, name = $2, price = $3, stock = $4
+		WHERE id = $5
+	`
+
+	result, err := pr.DB.ExecContext(
+		ctx,
+		query,
+		product.CategoryID,
+		product.Name,
+		product.Price,
+		product.Stock,
+		product.ID,
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New("product not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+
+	if rowsAffected == 0 {
+		return nil, errors.New("product not found")
+	}
+
+	return product, nil
 }
 
-func (pr *ProductRepository) Delete(id int) error {
-	for i, p := range _products {
-		if p.ID == id {
-			_products = append(_products[:i], _products[i+1:]...)
-			return nil
-		}
+func (pr *ProductRepository) Delete(ctx context.Context, id int) error {
+	const query = `
+		DELETE FROM products
+		WHERE id = $1
+	`
+
+	result, err := pr.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
 	}
 
-	return errors.New("product not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("product not found")
+	}
+
+	return nil
 }

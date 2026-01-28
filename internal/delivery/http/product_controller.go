@@ -18,7 +18,7 @@ func NewProductController(productUseCase *usecase.ProductUseCase) *ProductContro
 }
 
 func (pc *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) error {
-	products, err := pc.ProductUseCase.List()
+	products, err := pc.ProductUseCase.List(r.Context())
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (pc *ProductController) GetProducts(w http.ResponseWriter, r *http.Request)
 }
 
 func (pc *ProductController) GetProduct(w http.ResponseWriter, r *http.Request, id int) error {
-	product, err := pc.ProductUseCase.Get(id)
+	product, err := pc.ProductUseCase.Get(r.Context(), id)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (pc *ProductController) CreateProduct(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	product, err := pc.ProductUseCase.Create(req)
+	product, err := pc.ProductUseCase.Create(r.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (pc *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Reques
 
 	req.ID = id
 
-	product, err := pc.ProductUseCase.Update(req)
+	product, err := pc.ProductUseCase.Update(r.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (pc *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Reques
 }
 
 func (pc *ProductController) DeleteProduct(w http.ResponseWriter, r *http.Request, id int) error {
-	err := pc.ProductUseCase.Delete(id)
+	err := pc.ProductUseCase.Delete(r.Context(), id)
 	if err != nil {
 		return err
 	}
