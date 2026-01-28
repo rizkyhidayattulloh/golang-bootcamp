@@ -1,28 +1,22 @@
 package config
 
 import (
-	"fmt"
+	"os"
+	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	AppPort int `mapstructure:"APP_PORT"`
-}
+func NewViper() *viper.Viper {
+	config := viper.New()
 
-func NewViper() *Config {
-	_ = godotenv.Load()
+	config.AutomaticEnv()
+	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	viper.AutomaticEnv()
-
-	viper.SetDefault("APP_PORT", 8080)
-
-	var cfg Config
-	err := viper.Unmarshal(&cfg)
-	if err != nil {
-		panic(fmt.Errorf("unable to decode into struct: %w", err))
+	if _, err := os.Stat(".env"); err == nil {
+		config.SetConfigFile(".env")
+		_ = config.ReadInConfig()
 	}
 
-	return &cfg
+	return config
 }
