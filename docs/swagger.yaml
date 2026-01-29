@@ -29,7 +29,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WebResponseProductResponseArray"
+                $ref: "#/components/schemas/WebResponseProductListArray"
         "500":
           description: Internal Server Error
           content:
@@ -52,7 +52,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WebResponseProductResponse"
+                $ref: "#/components/schemas/WebResponseProductDetail"
         "400":
           description: Bad Request
           content:
@@ -78,7 +78,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WebResponseProductResponse"
+                $ref: "#/components/schemas/WebResponseProductDetail"
         "400":
           description: Invalid ID
           content:
@@ -109,7 +109,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WebResponseProductResponse"
+                $ref: "#/components/schemas/WebResponseProductDetail"
         "400":
           description: Bad Request
           content:
@@ -316,69 +316,125 @@ components:
         status:
           type: string
           example: ok
-    ProductResponse:
+    ProductListResponse:
       type: object
       properties:
         id:
           type: integer
           format: int64
+          example: 1
         name:
           type: string
+          example: "Product A"
         price:
-          type: integer
-          format: int64
+          type: number
+          format: double
+          example: 25000.50
         stock:
           type: integer
           format: int64
+          example: 100
+    ProductDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Product A"
+        price:
+          type: number
+          format: double
+          example: 25000.50
+        stock:
+          type: integer
+          format: int64
+          example: 100
+        category:
+          allOf:
+            - $ref: "#/components/schemas/ProductCategoryResponse"
+          nullable: true
+    ProductCategoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Electronics"
     CategoryResponse:
       type: object
       properties:
         id:
           type: integer
           format: int64
+          example: 1
         name:
           type: string
+          example: "Electronics"
         description:
           type: string
           nullable: true
+          example: "Electronic devices and accessories"
     CreateProductRequest:
       type: object
       required:
+        - category_id
         - name
         - price
         - stock
       properties:
-        name:
-          type: string
-        price:
+        category_id:
           type: integer
           format: int64
+          example: 1
+        name:
+          type: string
+          example: "Product A"
+        price:
+          type: number
+          format: double
           minimum: 0
+          example: 25000.50
         stock:
           type: integer
           format: int64
           minimum: 0
+          example: 100
     UpdateProductRequest:
       type: object
       required:
+        - category_id
         - name
         - price
         - stock
       properties:
+        category_id:
+          type: integer
+          format: int64
+          example: 1
         id:
           type: integer
           format: int64
           description: Optional. Server uses the path ID.
+          example: 1
         name:
           type: string
+          example: "Product A Updated"
         price:
-          type: integer
-          format: int64
+          type: number
+          format: double
           minimum: 0
+          example: 30000.75
         stock:
           type: integer
           format: int64
           minimum: 0
+          example: 150
     CreateCategoryRequest:
       type: object
       required:
@@ -386,9 +442,11 @@ components:
       properties:
         name:
           type: string
+          example: "Electronics"
         description:
           type: string
           nullable: true
+          example: "Electronic devices and accessories"
     UpdateCategoryRequest:
       type: object
       required:
@@ -398,30 +456,34 @@ components:
           type: integer
           format: int64
           description: Optional. Server uses the path ID.
+          example: 1
         name:
           type: string
+          example: "Electronics Updated"
         description:
           type: string
           nullable: true
+          example: "Updated description for electronics"
     MessageResponse:
       type: object
       properties:
         message:
           type: string
-    WebResponseProductResponseArray:
+          example: "Operation successful"
+    WebResponseProductListArray:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/ProductResponse"
+            $ref: "#/components/schemas/ProductListResponse"
         errors:
           type: string
-    WebResponseProductResponse:
+    WebResponseProductDetail:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/ProductResponse"
+          $ref: "#/components/schemas/ProductDetailResponse"
         errors:
           type: string
     WebResponseCategoryResponseArray:
