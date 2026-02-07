@@ -25,10 +25,10 @@ func NewProductUseCase(productRepository *repository.ProductRepository, category
 	}
 }
 
-func (p *ProductUseCase) List(ctx context.Context) ([]models.ProductResponse, error) {
-	products, err := p.ProductRepository.GetAll(ctx)
+func (p *ProductUseCase) List(ctx context.Context, request *models.SearchProductRequest) ([]models.ProductResponse, *models.PaginationResponse, error) {
+	products, total, err := p.ProductRepository.GetAndCountAll(ctx, request)
 	if err != nil {
-		return nil, &models.Error{
+		return nil, nil, &models.Error{
 			Status:  http.StatusInternalServerError,
 			Message: err.Error(),
 		}
@@ -39,7 +39,9 @@ func (p *ProductUseCase) List(ctx context.Context) ([]models.ProductResponse, er
 		response[i] = *converter.ProductToResponse(&product)
 	}
 
-	return response, nil
+	pagination := models.NewPaginationResponse(request.Page, request.Limit, total)
+
+	return response, pagination, nil
 }
 
 func (p *ProductUseCase) Get(ctx context.Context, id int) (*models.ProductResponse, error) {

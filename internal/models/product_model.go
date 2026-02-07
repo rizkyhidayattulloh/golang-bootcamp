@@ -27,3 +27,9 @@ type UpdateProductRequest struct {
 	Price      float64 `json:"price" validate:"required,min=0"`
 	Stock      int     `json:"stock" validate:"required,min=0"`
 }
+
+type SearchProductRequest struct {
+	Name       string `json:"name" validate:"omitempty,min=1"`
+	CategoryID string `json:"category_id" validate:"omitempty,min=1"`
+	PaginationRequest
+}

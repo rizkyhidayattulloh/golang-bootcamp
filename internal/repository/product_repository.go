@@ -6,13 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"kasir-api/internal/entity"
+	"kasir-api/internal/models"
 )
-
-var _products = []entity.Product{
-	{ID: 1, Name: "Product A", Price: 10000, Stock: 100},
-	{ID: 2, Name: "Product B", Price: 20000, Stock: 50},
-	{ID: 3, Name: "Product C", Price: 30000, Stock: 75},
-}
 
 type ProductRepository struct {
 	DB *sql.DB
@@ -24,16 +19,53 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	}
 }
 
-func (pr *ProductRepository) GetAll(ctx context.Context) ([]entity.Product, error) {
-	const query = `
+func (pr *ProductRepository) GetAndCountAll(ctx context.Context, request *models.SearchProductRequest) ([]entity.Product, int, error) {
+	query := `
 		SELECT *
 		FROM products
-		ORDER BY id
+		WHERE 1=1
+	`
+	countQuery := `
+		SELECT COUNT(*)
+		FROM products
+		WHERE 1=1
 	`
 
-	rows, err := pr.DB.QueryContext(ctx, query)
+	args := make([]interface{}, 0)
+	argPos := 1
+
+	if request.Name != "" {
+		q := fmt.Sprintf(" AND name ILIKE $%d", argPos)
+		query += q
+		countQuery += q
+
+		args = append(args, "%"+request.Name+"%")
+		argPos++
+	}
+
+	if request.CategoryID != "" {
+		q := fmt.Sprintf(" AND category_id = $%d", argPos)
+		query += q
+		countQuery += q
+
+		args = append(args, request.CategoryID)
+		argPos++
+	}
+
+	// Count total records
+	var total int
+	err := pr.DB.QueryRowContext(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	offset := (request.Page - 1) * request.Limit
+	query += fmt.Sprintf(" ORDER BY id LIMIT $%d OFFSET $%d", argPos, argPos+1)
+	args = append(args, request.Limit, offset)
+
+	rows, err := pr.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer func(rows *sql.Rows) {
 		if err := rows.Close(); err != nil {
@@ -53,17 +85,17 @@ func (pr *ProductRepository) GetAll(ctx context.Context) ([]entity.Product, erro
 			&product.Price,
 			&product.Stock,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		products = append(products, product)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return products, nil
+	return products, total, nil
 }
 
 func (pr *ProductRepository) FindByID(ctx context.Context, id int) (*entity.Product, error) {

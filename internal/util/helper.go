@@ -1,6 +1,8 @@
 package util
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 func StringPtr(s string) *string {
 	return &s

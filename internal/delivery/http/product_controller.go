@@ -18,13 +18,21 @@ func NewProductController(productUseCase *usecase.ProductUseCase) *ProductContro
 }
 
 func (pc *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) error {
-	products, err := pc.ProductUseCase.List(r.Context())
+	query := r.URL.Query()
+	req := &models.SearchProductRequest{
+		Name:              query.Get("name"),
+		CategoryID:        query.Get("category_id"),
+		PaginationRequest: models.NewPaginationRequest(query.Get("page"), query.Get("limit")),
+	}
+
+	products, pagination, err := pc.ProductUseCase.List(r.Context(), req)
 	if err != nil {
 		return err
 	}
 
 	util.EncodeJSON(w, http.StatusOK, models.WebResponse[[]models.ProductResponse]{
 		Data: products,
+		Meta: pagination,
 	})
 
 	return nil
