@@ -11,10 +11,12 @@ import (
 )
 
 type RouteConfig struct {
-	Server             *http.ServeMux
-	ProductController  *httpController.ProductController
-	CategoryController *httpController.CategoryController
-	DocsController     *httpController.DocsController
+	Server                *http.ServeMux
+	ProductController     *httpController.ProductController
+	CategoryController    *httpController.CategoryController
+	TransactionController *httpController.TransactionController
+	ReportController      *httpController.ReportController
+	DocsController        *httpController.DocsController
 }
 
 func (c *RouteConfig) Setup() {
@@ -145,6 +147,57 @@ func (c *RouteConfig) Setup() {
 				c.handleError(err, w)
 			}
 			return
+		default:
+			err := &models.Error{
+				Status:  http.StatusMethodNotAllowed,
+				Message: "Method not allowed",
+			}
+			c.handleError(err, w)
+			return
+		}
+	})
+
+	c.Server.HandleFunc("/api/transactions", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			err := c.TransactionController.Checkout(w, r)
+			if err != nil {
+				c.handleError(err, w)
+			}
+		default:
+			err := &models.Error{
+				Status:  http.StatusMethodNotAllowed,
+				Message: "Method not allowed",
+			}
+			c.handleError(err, w)
+			return
+		}
+	})
+
+	c.Server.HandleFunc("/api/report/today", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			err := c.ReportController.Today(w, r)
+			if err != nil {
+				c.handleError(err, w)
+			}
+		default:
+			err := &models.Error{
+				Status:  http.StatusMethodNotAllowed,
+				Message: "Method not allowed",
+			}
+			c.handleError(err, w)
+			return
+		}
+	})
+
+	c.Server.HandleFunc("/api/report", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			err := c.ReportController.ByDateRange(w, r)
+			if err != nil {
+				c.handleError(err, w)
+			}
 		default:
 			err := &models.Error{
 				Status:  http.StatusMethodNotAllowed,

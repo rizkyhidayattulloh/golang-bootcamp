@@ -25,7 +25,8 @@ func (pr *CategoryRepository) GetAll(ctx context.Context) ([]entity.Category, er
 		ORDER BY id
 	`
 
-	rows, err := pr.DB.QueryContext(ctx, query)
+	exec := executorFromContext(ctx, pr.DB)
+	rows, err := exec.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,8 @@ func (pr *CategoryRepository) FindByID(ctx context.Context, id int) (*entity.Cat
 		WHERE id = $1
 	`
 
-	row := pr.DB.QueryRowContext(ctx, query, id)
+	exec := executorFromContext(ctx, pr.DB)
+	row := exec.QueryRowContext(ctx, query, id)
 
 	var category entity.Category
 
@@ -90,7 +92,8 @@ func (pr *CategoryRepository) Create(ctx context.Context, Category *entity.Categ
 		RETURNING id
 	`
 
-	err := pr.DB.QueryRowContext(
+	exec := executorFromContext(ctx, pr.DB)
+	err := exec.QueryRowContext(
 		ctx,
 		query,
 		Category.Name,
@@ -110,7 +113,8 @@ func (pr *CategoryRepository) Update(ctx context.Context, Category *entity.Categ
 		WHERE id = $3
 	`
 
-	result, err := pr.DB.ExecContext(
+	exec := executorFromContext(ctx, pr.DB)
+	result, err := exec.ExecContext(
 		ctx,
 		query,
 		Category.Name,
@@ -139,7 +143,8 @@ func (pr *CategoryRepository) Delete(ctx context.Context, id int) error {
 		WHERE id = $1
 	`
 
-	result, err := pr.DB.ExecContext(ctx, query, id)
+	exec := executorFromContext(ctx, pr.DB)
+	result, err := exec.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

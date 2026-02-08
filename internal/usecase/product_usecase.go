@@ -14,13 +14,15 @@ import (
 type ProductUseCase struct {
 	ProductRepository  *repository.ProductRepository
 	CategoryRepository *repository.CategoryRepository
+	Transactor         *repository.Transactor
 	Validate           *validator.Validate
 }
 
-func NewProductUseCase(productRepository *repository.ProductRepository, categoryRepository *repository.CategoryRepository, validate *validator.Validate) *ProductUseCase {
+func NewProductUseCase(productRepository *repository.ProductRepository, categoryRepository *repository.CategoryRepository, transactor *repository.Transactor, validate *validator.Validate) *ProductUseCase {
 	return &ProductUseCase{
 		ProductRepository:  productRepository,
 		CategoryRepository: categoryRepository,
+		Transactor:         transactor,
 		Validate:           validate,
 	}
 }
@@ -65,14 +67,6 @@ func (p *ProductUseCase) Create(ctx context.Context, request *models.CreateProdu
 		}
 	}
 
-	_, err = p.CategoryRepository.FindByID(ctx, request.CategoryID)
-	if err != nil {
-		return nil, &models.Error{
-			Status:  http.StatusBadRequest,
-			Message: "invalid category id",
-		}
-	}
-
 	product := &entity.Product{
 		Name:       request.Name,
 		Price:      request.Price,
@@ -80,15 +74,31 @@ func (p *ProductUseCase) Create(ctx context.Context, request *models.CreateProdu
 		CategoryID: request.CategoryID,
 	}
 
-	createdProduct, err := p.ProductRepository.Create(ctx, product)
-	if err != nil {
-		return nil, &models.Error{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
+	var response *models.ProductResponse
+	err = p.Transactor.WithTx(ctx, func(txCtx context.Context) error {
+		_, err := p.CategoryRepository.FindByID(txCtx, request.CategoryID)
+		if err != nil {
+			return &models.Error{
+				Status:  http.StatusBadRequest,
+				Message: "invalid category id",
+			}
 		}
+
+		createdProduct, err := p.ProductRepository.Create(txCtx, product)
+		if err != nil {
+			return &models.Error{
+				Status:  http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+
+		response = converter.ProductToResponse(createdProduct)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	response := converter.ProductToResponse(createdProduct)
 	return response, nil
 }
 
@@ -102,22 +112,6 @@ func (p *ProductUseCase) Update(ctx context.Context, request *models.UpdateProdu
 		}
 	}
 
-	_, err = p.ProductRepository.FindByID(ctx, request.ID)
-	if err != nil {
-		return nil, &models.Error{
-			Status:  http.StatusNotFound,
-			Message: err.Error(),
-		}
-	}
-
-	_, err = p.CategoryRepository.FindByID(ctx, request.CategoryID)
-	if err != nil {
-		return nil, &models.Error{
-			Status:  http.StatusBadRequest,
-			Message: "invalid category id",
-		}
-	}
-
 	product := &entity.Product{
 		ID:         request.ID,
 		Name:       request.Name,
@@ -126,15 +120,39 @@ func (p *ProductUseCase) Update(ctx context.Context, request *models.UpdateProdu
 		CategoryID: request.CategoryID,
 	}
 
-	updatedProduct, err := p.ProductRepository.Update(ctx, product)
-	if err != nil {
-		return nil, &models.Error{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
+	var response *models.ProductResponse
+	err = p.Transactor.WithTx(ctx, func(txCtx context.Context) error {
+		_, err := p.ProductRepository.FindByID(txCtx, request.ID)
+		if err != nil {
+			return &models.Error{
+				Status:  http.StatusNotFound,
+				Message: err.Error(),
+			}
 		}
+
+		_, err = p.CategoryRepository.FindByID(txCtx, request.CategoryID)
+		if err != nil {
+			return &models.Error{
+				Status:  http.StatusBadRequest,
+				Message: "invalid category id",
+			}
+		}
+
+		updatedProduct, err := p.ProductRepository.Update(txCtx, product)
+		if err != nil {
+			return &models.Error{
+				Status:  http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+
+		response = converter.ProductToResponse(updatedProduct)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	response := converter.ProductToResponse(updatedProduct)
 	return response, nil
 }
 

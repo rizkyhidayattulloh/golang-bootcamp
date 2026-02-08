@@ -21,7 +21,7 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 
 func (pr *ProductRepository) GetAndCountAll(ctx context.Context, request *models.SearchProductRequest) ([]entity.Product, int, error) {
 	query := `
-		SELECT *
+		SELECT id, category_id, name, price, stock
 		FROM products
 		WHERE 1=1
 	`
@@ -52,9 +52,11 @@ func (pr *ProductRepository) GetAndCountAll(ctx context.Context, request *models
 		argPos++
 	}
 
+	exec := executorFromContext(ctx, pr.DB)
+
 	// Count total records
 	var total int
-	err := pr.DB.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	err := exec.QueryRowContext(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -63,7 +65,7 @@ func (pr *ProductRepository) GetAndCountAll(ctx context.Context, request *models
 	query += fmt.Sprintf(" ORDER BY id LIMIT $%d OFFSET $%d", argPos, argPos+1)
 	args = append(args, request.Limit, offset)
 
-	rows, err := pr.DB.QueryContext(ctx, query, args...)
+	rows, err := exec.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -114,7 +116,8 @@ func (pr *ProductRepository) FindByID(ctx context.Context, id int) (*entity.Prod
 		WHERE p.id = $1
 	`
 
-	row := pr.DB.QueryRowContext(ctx, query, id)
+	exec := executorFromContext(ctx, pr.DB)
+	row := exec.QueryRowContext(ctx, query, id)
 
 	var product entity.Product
 	var category entity.Category
@@ -147,7 +150,8 @@ func (pr *ProductRepository) Create(ctx context.Context, product *entity.Product
 		RETURNING id
 	`
 
-	err := pr.DB.QueryRowContext(
+	exec := executorFromContext(ctx, pr.DB)
+	err := exec.QueryRowContext(
 		ctx,
 		query,
 		product.CategoryID,
@@ -169,7 +173,8 @@ func (pr *ProductRepository) Update(ctx context.Context, product *entity.Product
 		WHERE id = $5
 	`
 
-	result, err := pr.DB.ExecContext(
+	exec := executorFromContext(ctx, pr.DB)
+	result, err := exec.ExecContext(
 		ctx,
 		query,
 		product.CategoryID,
@@ -200,7 +205,8 @@ func (pr *ProductRepository) Delete(ctx context.Context, id int) error {
 		WHERE id = $1
 	`
 
-	result, err := pr.DB.ExecContext(ctx, query, id)
+	exec := executorFromContext(ctx, pr.DB)
+	result, err := exec.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
@@ -215,4 +221,81 @@ func (pr *ProductRepository) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+func (pr *ProductRepository) DeductStockOptimistic(ctx context.Context, id, quantity int, version int) (bool, error) {
+	const query = `
+		UPDATE products
+		SET stock = stock - $1,
+		    version = version + 1
+		WHERE id = $2 AND version = $3 AND stock >= $1
+	`
+
+	exec := executorFromContext(ctx, pr.DB)
+
+	result, err := exec.ExecContext(ctx, query, quantity, id, version)
+	if err != nil {
+		return false, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return affected == 1, nil
+}
+
+func (pr *ProductRepository) FindByIds(ctx context.Context, ids []int) ([]entity.Product, error) {
+	if len(ids) == 0 {
+		return []entity.Product{}, nil
+	}
+
+	query := `
+		SELECT *
+		FROM products
+		WHERE id IN (`
+
+	args := make([]interface{}, 0, len(ids))
+	for i, id := range ids {
+		if i > 0 {
+			query += ","
+		}
+		query += fmt.Sprintf("$%d", i+1)
+		args = append(args, id)
+	}
+	query += ")"
+
+	exec := executorFromContext(ctx, pr.DB)
+	rows, err := exec.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Println("failed to close rows:", err)
+		}
+	}()
+
+	products := make([]entity.Product, 0)
+	for rows.Next() {
+		var product entity.Product
+		if err := rows.Scan(
+			&product.ID,
+			&product.CategoryID,
+			&product.Name,
+			&product.Price,
+			&product.Stock,
+			&product.Version,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }
