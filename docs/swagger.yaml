@@ -18,11 +18,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /swagger/doc.json:
+    get:
+      tags:
+        - Docs
+      summary: Swagger JSON
+      responses:
+        "200":
+          description: OK
+  /:
+    get:
+      tags:
+        - Docs
+      summary: Swagger UI
+      responses:
+        "200":
+          description: OK
   /api/products:
     get:
       tags:
         - Products
       summary: List products
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
@@ -300,6 +339,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /api/transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseCheckout"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/report/today:
+    get:
+      tags:
+        - Reports
+      summary: Report for today
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseReport"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/report:
+    get:
+      tags:
+        - Reports
+      summary: Report by date range
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "2026-01-01"
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "2026-02-01"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponseReport"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   parameters:
     IdPathParam:
@@ -464,6 +600,83 @@ components:
           type: string
           nullable: true
           example: "Updated description for electronics"
+    CheckoutRequest:
+      type: object
+      required:
+        - products
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckoutProductRequest"
+    CheckoutProductRequest:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: integer
+          format: int64
+          example: 1
+        quantity:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 2
+    CheckoutResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+          format: int64
+          example: 123
+        total_amount:
+          type: number
+          format: double
+          example: 45000
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckoutProductDetail"
+    CheckoutProductDetail:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          format: int64
+          example: 1
+        quantity:
+          type: integer
+          format: int64
+          example: 2
+        price:
+          type: number
+          format: double
+          example: 15000
+    ReportResponse:
+      type: object
+      properties:
+        total_revenue:
+          type: number
+          format: double
+          example: 45000
+        total_transaksi:
+          type: integer
+          format: int64
+          example: 5
+        produk_terlaris:
+          $ref: "#/components/schemas/ReportTopProduct"
+    ReportTopProduct:
+      type: object
+      properties:
+        nama:
+          type: string
+          example: "Indomie Goreng"
+        qty_terjual:
+          type: integer
+          format: int64
+          example: 12
     MessageResponse:
       type: object
       properties:
@@ -477,15 +690,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProductListResponse"
-        errors:
-          type: string
+        meta:
+          $ref: "#/components/schemas/PaginationResponse"
     WebResponseProductDetail:
       type: object
       properties:
         data:
           $ref: "#/components/schemas/ProductDetailResponse"
-        errors:
-          type: string
     WebResponseCategoryResponseArray:
       type: object
       properties:
@@ -493,22 +704,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CategoryResponse"
-        errors:
-          type: string
     WebResponseCategoryResponse:
       type: object
       properties:
         data:
           $ref: "#/components/schemas/CategoryResponse"
-        errors:
-          type: string
     WebResponseMessage:
       type: object
       properties:
         data:
           $ref: "#/components/schemas/MessageResponse"
-        errors:
-          type: string
+    WebResponseCheckout:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CheckoutResponse"
+    WebResponseReport:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ReportResponse"
     ErrorResponse:
       type: object
       properties:
@@ -517,3 +732,18 @@ components:
           format: int64
         message:
           type: string
+    PaginationResponse:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          format: int64
+        per_page:
+          type: integer
+          format: int64
+        total_items:
+          type: integer
+          format: int64
+        total_pages:
+          type: integer
+          format: int64
