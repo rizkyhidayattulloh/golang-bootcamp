@@ -18,22 +18,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
-  /swagger/doc.json:
-    get:
-      tags:
-        - Docs
-      summary: Swagger JSON
-      responses:
-        "200":
-          description: OK
-  /:
-    get:
-      tags:
-        - Docs
-      summary: Swagger UI
-      responses:
-        "200":
-          description: OK
   /api/products:
     get:
       tags:
